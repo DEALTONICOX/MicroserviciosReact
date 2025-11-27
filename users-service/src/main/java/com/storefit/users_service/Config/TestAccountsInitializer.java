@@ -1,15 +1,17 @@
 package com.storefit.users_service.Config;
 
-import com.storefit.users_service.Model.Registro;
-import com.storefit.users_service.Model.Usuario;
-import com.storefit.users_service.Repository.RegistroRepository;
-import com.storefit.users_service.Repository.UsuarioRepository;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.storefit.users_service.Model.Registro;
+import com.storefit.users_service.Model.Usuario;
+import com.storefit.users_service.Repository.RegistroRepository;
+import com.storefit.users_service.Repository.UsuarioRepository;
+
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
