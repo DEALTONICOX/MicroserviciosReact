@@ -16,6 +16,7 @@ public class CorsConfig {
                 registry.addMapping("/**")
                         .allowedOrigins(
                                 "http://localhost:5173", // Vite
+                                "http://localhost:5174",
                                 "http://localhost:3000"  // React clásico
                         )
                         .allowedMethods("GET","POST","PUT","DELETE","PATCH","OPTIONS")
