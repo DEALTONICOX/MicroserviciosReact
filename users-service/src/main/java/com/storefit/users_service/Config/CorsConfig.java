@@ -15,7 +15,7 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(
-                                "http://localhost:5174", // 👉 tu Vite está corriendo aquí
+                                "http://localhost:5174", 
                                 "http://localhost:5173",
                                 "http://localhost:3000"
                         )
