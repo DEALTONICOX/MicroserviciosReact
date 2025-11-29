@@ -10,63 +10,57 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.server.ResponseStatusException;
 
 import com.storefit.orders_service.Model.StockReservaItemDTO;
+
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class CatalogClient {
-    private final WebClient.Builder webClientBuilder;
 
-    @Value("${catalog-service.url:http://localhost:8081}")
-    private String catalogBaseUrl;
+        private final WebClient.Builder webClientBuilder;
 
-    public void reservarStock(List<StockReservaItemDTO> items) {
-        String path = "/api/v1/productos/stock/reservar";
+        @Value("${catalog-service.url:http://localhost:8081}")
+        private String catalogBaseUrl;
 
-        try {
-            WebClient client = webClientBuilder
-                    .baseUrl(catalogBaseUrl)
-                    .build();
+        public void reservarStock(List<StockReservaItemDTO> items) {
+                String path = "/api/v1/productos/stock/reservar";
 
-            client.post()
-                    .uri(path)
-                    .bodyValue(items)
-                    .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), r ->
-                            r.bodyToMono(String.class)
-                             .map(msg -> new ResponseStatusException(
-                                     r.statusCode(),
-                                     msg != null && !msg.isBlank()
-                                             ? msg
-                                             : "Error al reservar stock en catalog-service (4xx)"
-                             ))
-                    )
-                    .onStatus(status -> status.is5xxServerError(), r ->
-                            r.bodyToMono(String.class)
-                             .map(msg -> new ResponseStatusException(
-                                     HttpStatus.BAD_GATEWAY,
-                                     msg != null && !msg.isBlank()
-                                             ? msg
-                                             : "Falla interna en catalog-service (5xx)"
-                             ))
-                    )
-                    .toBodilessEntity()
-                    .block(); 
+                WebClient client = webClientBuilder
+                                .baseUrl(catalogBaseUrl)
+                                .build();
 
-        } catch (WebClientResponseException ex) {
-            // Errores HTTP no manejados arriba (por ejemplo, timeouts u otros)
-            throw new ResponseStatusException(
-                    ex.getStatusCode(),
-                    ex.getResponseBodyAsString(),
-                    ex
-            );
-        } catch (Exception ex) {
-            // Error de red, DNS, servicio caído, etc.
-            throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE,
-                    "No se pudo contactar al catalog-service",
-                    ex
-            );
+                try {
+                        client.post()
+                                        .uri(path)
+                                        .bodyValue(items)
+                                        .retrieve()
+                                        // Si el catálogo responde 4xx/5xx, propagamos ese mismo status y mensaje
+                                        .onStatus(status -> status.isError(), r -> r.bodyToMono(String.class)
+                                                        .map(msg -> new ResponseStatusException(
+                                                                        r.statusCode(),
+                                                                        (msg != null && !msg.isBlank())
+                                                                                        ? msg
+                                                                                        : "Error al reservar stock en catalog-service ("
+                                                                                                        + r.statusCode()
+                                                                                                        + ")")))
+                                        .toBodilessEntity()
+                                        .block();
+
+                } catch (ResponseStatusException ex) {
+                        // Ya viene con el código correcto (400, 404, 409, 500...)
+                        throw ex;
+                } catch (WebClientResponseException ex) {
+                        // Errores HTTP que lanza directamente WebClient
+                        throw new ResponseStatusException(
+                                        ex.getStatusCode(),
+                                        ex.getResponseBodyAsString(),
+                                        ex);
+                } catch (Exception ex) {
+                        // SOLO errores de red reales (timeout, conexión rechazada, etc.)
+                        throw new ResponseStatusException(
+                                        HttpStatus.SERVICE_UNAVAILABLE,
+                                        "No se pudo contactar al catalog-service",
+                                        ex);
+                }
         }
-    }
 }

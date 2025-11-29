@@ -1,5 +1,27 @@
 -- Productos (color Negro) - stock 80 para cada talla (XS,S,M,L,XL)
 -- XFITRX (categoría 1) - imagen: /img/PoleraStorefit.png
+
+
+-- =========================
+-- Categorías base StoreFit
+-- =========================
+INSERT INTO categoria (id_categoria, nombre)
+VALUES (1, 'Poleras')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+
+INSERT INTO categoria (id_categoria, nombre)
+VALUES (2, 'Polerones')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+
+INSERT INTO categoria (id_categoria, nombre)
+VALUES (3, 'Buzos')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+
+INSERT INTO categoria (id_categoria, nombre)
+VALUES (4, 'Conjunto femenino')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+
+
 INSERT INTO producto (id_categoria, id_producto, marca, modelo, color, talla, precio, stock, image_url)
 VALUES (1, 1001, 'StoreFit', 'XFITRX', 'Negro', 'XS', 9990, 80, '/img/PoleraStorefit.png')
 ON DUPLICATE KEY UPDATE marca=VALUES(marca), modelo=VALUES(modelo), color=VALUES(color), talla=VALUES(talla), precio=VALUES(precio), stock=VALUES(stock), image_url=VALUES(image_url);

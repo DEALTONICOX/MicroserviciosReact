@@ -96,7 +96,7 @@ public class ProductoService {
         repo.delete(findByIds(categoriaId, productoId));
     }
 
-    //Reserva y descuento de stock
+    // Reserva y descuento de stock
 
     @Transactional
     public void verificarYDescontarStock(List<StockReservaItem> items) {
@@ -110,7 +110,12 @@ public class ProductoService {
                 throw new IllegalArgumentException("Cada item debe indicar idProducto y cantidad > 0");
             }
 
-            var producto = repo.findByIdIdProducto(item.getIdProducto())
+            // Buscar el producto por idProducto dentro del id compuesto
+            Producto producto = repo.findAll().stream()
+                    .filter(p -> p.getId() != null
+                            && p.getId().getIdProducto() != null
+                            && p.getId().getIdProducto().equals(item.getIdProducto()))
+                    .findFirst()
                     .orElseThrow(() -> new EntityNotFoundException(
                             "Producto no encontrado con id_producto=" + item.getIdProducto()));
 
@@ -118,28 +123,36 @@ public class ProductoService {
                 throw new StockInsuficienteException(
                         "Stock insuficiente para el producto " + item.getIdProducto()
                                 + " (disponible=" + producto.getStock()
-                                + ", solicitado=" + item.getCantidad() + ")"
-                );
+                                + ", solicitado=" + item.getCantidad() + ")");
             }
         }
 
         // Si todo está OK, recién aquí descontamos stock
         for (StockReservaItem item : items) {
-            var producto = repo.findByIdIdProducto(item.getIdProducto())
+            Producto producto = repo.findAll().stream()
+                    .filter(p -> p.getId() != null
+                            && p.getId().getIdProducto() != null
+                            && p.getId().getIdProducto().equals(item.getIdProducto()))
+                    .findFirst()
                     .orElseThrow(() -> new EntityNotFoundException(
                             "Producto no encontrado con id_producto=" + item.getIdProducto()));
+
             producto.setStock(producto.getStock() - item.getCantidad());
             repo.save(producto);
         }
     }
 
-    //Helpers
+    // Helpers
 
     private void normalizar(Producto p) {
-        if (p.getMarca() != null) p.setMarca(p.getMarca().trim());
-        if (p.getModelo() != null) p.setModelo(p.getModelo().trim());
-        if (p.getColor() != null) p.setColor(p.getColor().trim());
-        if (p.getTalla() != null) p.setTalla(p.getTalla().trim().toUpperCase());
+        if (p.getMarca() != null)
+            p.setMarca(p.getMarca().trim());
+        if (p.getModelo() != null)
+            p.setModelo(p.getModelo().trim());
+        if (p.getColor() != null)
+            p.setColor(p.getColor().trim());
+        if (p.getTalla() != null)
+            p.setTalla(p.getTalla().trim().toUpperCase());
         // Imagen: si viene en blanco, la dejamos en null
         if (p.getImageUrl() != null && p.getImageUrl().trim().isEmpty()) {
             p.setImageUrl(null);
@@ -147,10 +160,14 @@ public class ProductoService {
     }
 
     private void validarObligatorios(Producto p) {
-        if (isBlank(p.getMarca()))  throw new IllegalArgumentException("La marca es obligatoria");
-        if (isBlank(p.getModelo())) throw new IllegalArgumentException("El modelo es obligatorio");
-        if (isBlank(p.getColor()))  throw new IllegalArgumentException("El color es obligatorio");
-        if (isBlank(p.getTalla()))  throw new IllegalArgumentException("La talla es obligatoria");
+        if (isBlank(p.getMarca()))
+            throw new IllegalArgumentException("La marca es obligatoria");
+        if (isBlank(p.getModelo()))
+            throw new IllegalArgumentException("El modelo es obligatorio");
+        if (isBlank(p.getColor()))
+            throw new IllegalArgumentException("El color es obligatorio");
+        if (isBlank(p.getTalla()))
+            throw new IllegalArgumentException("La talla es obligatoria");
 
         if (!TALLAS.contains(p.getTalla())) {
             throw new IllegalArgumentException("La talla debe ser XS, S, M, L o XL");

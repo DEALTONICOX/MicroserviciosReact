@@ -19,6 +19,9 @@ public class AgregarItemRequest {
     @NotNull
     @Min(1)
     private Integer cantidad;
+    private String nombre;
+
+    private Integer precio;   
 
     @NotNull
     private String talla;

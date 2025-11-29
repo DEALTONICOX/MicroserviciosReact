@@ -40,7 +40,8 @@ public class CarritoService {
     }
 
     /**
-     * Agrega un ítem al carrito del usuario (o suma cantidad si ya existe misma talla).
+     * Agrega un ítem al carrito del usuario (o suma cantidad si ya existe misma
+     * talla).
      */
     public CarritoDTO agregarItem(String rutUsuario, AgregarItemRequest request) {
         String productoId = extraerProductoId(request.getProductoId());
@@ -61,21 +62,21 @@ public class CarritoService {
         // Buscar si ya existe un item con mismo productoId y talla
         CarritoItemDTO existente = carrito.getItems().stream()
                 .filter(i -> productoId.equals(i.getProductoId())
-                          && request.getTalla().equalsIgnoreCase(i.getTalla()))
+                        && request.getTalla().equalsIgnoreCase(i.getTalla()))
                 .findFirst()
                 .orElse(null);
 
         if (existente != null) {
             existente.setCantidad(existente.getCantidad() + request.getCantidad());
         } else {
-           
+
             CarritoItemDTO nuevo = CarritoItemDTO.builder()
                     .productoId(productoId)
-                    .nombre("Producto " + productoId)
-                    .precio(0)                         
+                    .nombre(request.getNombre() != null ? request.getNombre() : "Producto " + productoId)
+                    .precio(request.getPrecio() != null ? request.getPrecio() : 0)
                     .cantidad(request.getCantidad())
                     .talla(request.getTalla())
-                    .imagen(null)                      
+                    .imagen(null)
                     .build();
             carrito.getItems().add(nuevo);
         }
@@ -98,7 +99,7 @@ public class CarritoService {
         CarritoDTO carrito = obtenerCarritoDeUsuario(rutUsuario);
         CarritoItemDTO item = carrito.getItems().stream()
                 .filter(i -> productoIdPath.equals(i.getProductoId())
-                          && request.getTalla().equalsIgnoreCase(i.getTalla()))
+                        && request.getTalla().equalsIgnoreCase(i.getTalla()))
                 .findFirst()
                 .orElse(null);
 
@@ -120,9 +121,8 @@ public class CarritoService {
         }
 
         CarritoDTO carrito = obtenerCarritoDeUsuario(rutUsuario);
-        boolean removed = carrito.getItems().removeIf(i ->
-                productoIdPath.equals(i.getProductoId())
-                        && talla.equalsIgnoreCase(i.getTalla()));
+        boolean removed = carrito.getItems().removeIf(i -> productoIdPath.equals(i.getProductoId())
+                && talla.equalsIgnoreCase(i.getTalla()));
 
         if (!removed) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Item no encontrado en el carrito");
@@ -146,7 +146,7 @@ public class CarritoService {
     private void recalcularTotal(CarritoDTO carrito) {
         int total = carrito.getItems().stream()
                 .mapToInt(i -> (i.getPrecio() != null ? i.getPrecio() : 0)
-                             * (i.getCantidad() != null ? i.getCantidad() : 0))
+                        * (i.getCantidad() != null ? i.getCantidad() : 0))
                 .sum();
         carrito.setTotal(total);
         carrito.setUpdatedAt(Instant.now());
@@ -195,7 +195,6 @@ public class CarritoService {
         // Si no reconocemos el formato:
         throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "Formato de productoId no soportado"
-        );
+                "Formato de productoId no soportado");
     }
 }

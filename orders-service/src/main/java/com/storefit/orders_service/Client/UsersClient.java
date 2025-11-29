@@ -8,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.server.ResponseStatusException;
 
 import com.storefit.orders_service.Model.UsuarioDTO;
+
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -22,62 +23,63 @@ public class UsersClient {
     // GET /api/v1/usuarios/{rut}: devuelve el usuario
     public UsuarioDTO obtenerUsuarioPorRut(String rut) {
         String path = "/api/v1/usuarios/" + rut;
+        WebClient client = webClientBuilder.baseUrl(usersBaseUrl).build();
+
         try {
-            WebClient client = webClientBuilder.baseUrl(usersBaseUrl).build();
             return client.get()
                     .uri(path)
                     .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), r ->
-                            r.bodyToMono(String.class)
-                             .map(msg -> new ResponseStatusException(
-                                     HttpStatus.NOT_FOUND,
-                                     (msg != null && !msg.isBlank()) ? msg : "Usuario no encontrado"
-                             ))
-                    )
-                    .onStatus(status -> status.is5xxServerError(), r ->
-                            r.bodyToMono(String.class)
-                             .map(msg -> new ResponseStatusException(
-                                     HttpStatus.BAD_GATEWAY,
-                                     (msg != null && !msg.isBlank()) ? msg : "Error en users-service"
-                             ))
-                    )
+                    .onStatus(status -> status.is4xxClientError(), r -> r.bodyToMono(String.class)
+                            .map(msg -> new ResponseStatusException(
+                                    HttpStatus.NOT_FOUND,
+                                    (msg != null && !msg.isBlank()) ? msg : "Usuario no encontrado")))
+                    .onStatus(status -> status.is5xxServerError(), r -> r.bodyToMono(String.class)
+                            .map(msg -> new ResponseStatusException(
+                                    HttpStatus.BAD_GATEWAY,
+                                    (msg != null && !msg.isBlank()) ? msg : "Error en users-service")))
                     .bodyToMono(UsuarioDTO.class)
                     .block();
+        } catch (ResponseStatusException ex) {
+            // Mantener 404 / 502 / etc tal cual
+            throw ex;
         } catch (WebClientResponseException ex) {
             throw new ResponseStatusException(ex.getStatusCode(), ex.getResponseBodyAsString(), ex);
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar users-service", ex);
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudo contactar users-service",
+                    ex);
         }
     }
 
     // Validación simple: solo asegura 2xx
     public void validarUsuarioExistePorRut(String rut) {
         String path = "/api/v1/usuarios/" + rut;
+        WebClient client = webClientBuilder.baseUrl(usersBaseUrl).build();
+
         try {
-            WebClient client = webClientBuilder.baseUrl(usersBaseUrl).build();
             client.get()
                     .uri(path)
                     .retrieve()
-                    .onStatus(status -> status.is4xxClientError(), r ->
-                            r.bodyToMono(String.class)
-                             .map(msg -> new ResponseStatusException(
-                                     HttpStatus.NOT_FOUND,
-                                     (msg != null && !msg.isBlank()) ? msg : "Usuario no encontrado"
-                             ))
-                    )
-                    .onStatus(status -> status.is5xxServerError(), r ->
-                            r.bodyToMono(String.class)
-                             .map(msg -> new ResponseStatusException(
-                                     HttpStatus.BAD_GATEWAY,
-                                     (msg != null && !msg.isBlank()) ? msg : "Error en users-service"
-                             ))
-                    )
+                    .onStatus(status -> status.is4xxClientError(), r -> r.bodyToMono(String.class)
+                            .map(msg -> new ResponseStatusException(
+                                    HttpStatus.NOT_FOUND,
+                                    (msg != null && !msg.isBlank()) ? msg : "Usuario no encontrado")))
+                    .onStatus(status -> status.is5xxServerError(), r -> r.bodyToMono(String.class)
+                            .map(msg -> new ResponseStatusException(
+                                    HttpStatus.BAD_GATEWAY,
+                                    (msg != null && !msg.isBlank()) ? msg : "Error en users-service")))
                     .toBodilessEntity()
                     .block();
+        } catch (ResponseStatusException ex) {
+            throw ex;
         } catch (WebClientResponseException ex) {
             throw new ResponseStatusException(ex.getStatusCode(), ex.getResponseBodyAsString(), ex);
         } catch (Exception ex) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo contactar users-service", ex);
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "No se pudo contactar users-service",
+                    ex);
         }
     }
 }

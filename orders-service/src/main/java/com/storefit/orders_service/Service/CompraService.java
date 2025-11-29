@@ -37,46 +37,45 @@ public class CompraService {
         return compraRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Compra no encontrada"
-                ));
+                        "Compra no encontrada"));
     }
 
     public Compra crearCompra(Compra compra) {
         if (compra.getDetalles() == null || compra.getDetalles().isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "La compra debe contener al menos un detalle"
-            );
+                    "La compra debe contener al menos un detalle");
         }
 
         // 0) Validar usuario en users-service
-        //    En nuestro modelo el campo es rutUsuario (String)
+        // En nuestro modelo el campo es rutUsuario (String)
         String rutUsuario = compra.getRutUsuario();
         if (rutUsuario == null || rutUsuario.isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "La compra debe indicar el rut del usuario"
-            );
+                    "La compra debe indicar el rut del usuario");
         }
         rutUsuario = rutUsuario.trim();
         UsuarioDTO usuario = usersClient.obtenerUsuarioPorRut(rutUsuario);
         if (usuario == null || usuario.getRut() == null || !rutUsuario.equals(usuario.getRut())) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Usuario no encontrado o RUT no coincide"
-            );
+                    "Usuario no encontrado o RUT no coincide");
         }
 
         // 1) Preparamos el payload para el catalog-service
         List<StockReservaItemDTO> stockItems = new ArrayList<>();
+
         for (CompraDetalle d : compra.getDetalles()) {
             if (d.getIdProducto() == null || d.getCantidad() == null || d.getCantidad() <= 0) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Cada detalle debe indicar idProducto y cantidad > 0"
-                );
+                        "Cada detalle debe indicar idProducto y cantidad > 0");
             }
-            stockItems.add(new StockReservaItemDTO(d.getIdProducto(), d.getCantidad()));
+
+            stockItems.add(new StockReservaItemDTO(
+                    d.getIdProducto(),
+                    d.getCantidad()));
         }
 
         // 2) Llamamos al catalog-service para verificar y descontar stock

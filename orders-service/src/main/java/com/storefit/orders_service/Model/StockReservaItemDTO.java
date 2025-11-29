@@ -11,4 +11,3 @@ public class StockReservaItemDTO {
     private Long idProducto;
     private Integer cantidad;
 }
-
