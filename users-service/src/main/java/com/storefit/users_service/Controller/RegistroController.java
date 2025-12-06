@@ -16,6 +16,7 @@ import com.storefit.users_service.Model.Usuario;
 import com.storefit.users_service.Service.RegistroService;
 import com.storefit.users_service.Service.UsuarioService;
 import com.storefit.users_service.security.Authorization;
+import com.storefit.users_service.security.JwtUtil;
 import com.storefit.users_service.security.RequestUser;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,7 @@ public class RegistroController {
 
     private final RegistroService service;
     private final UsuarioService usuarioService;
+    private final JwtUtil jwtUtil;
 
     @GetMapping("/by-usuario/{usuario}")
     @Operation(summary = "Obtener registro por usuario (correo)")
@@ -48,30 +50,66 @@ public class RegistroController {
             @ApiResponse(responseCode = "404", description = "No encontrado")
     })
     public Registro byUsuario(@PathVariable String usuario,
-            @RequestHeader("X-User-Rut") String headerRut, // Header con RUT autenticado
-            @RequestHeader("X-User-Rol") String headerRol) { // Header con rol autenticado
+                              @RequestHeader("X-User-Rut") String headerRut, // Header con RUT autenticado
+                              @RequestHeader("X-User-Rol") String headerRol) { // Header con rol autenticado
         RequestUser user = Authorization.fromHeaders(headerRut, headerRol); // Valida headers
         Authorization.requireAdmin(user); // Solo ADMIN puede ver registros
         return service.findByUsuario(usuario);
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Login por correo + contraseña", description = "Valida credenciales y devuelve datos de rol y perfil mínimo.")
+    @Operation(
+            summary = "Login por correo + contraseña",
+            description = "Valida credenciales, genera token JWT y devuelve datos de rol y perfil mínimo."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Autenticado", content = @Content(schema = @Schema(implementation = LoginResponse.class))),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Autenticado",
+                    content = @Content(schema = @Schema(implementation = LoginResponse.class))
+            ),
             @ApiResponse(responseCode = "401", description = "Credenciales inválidas")
     })
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest req) {
         try {
+            // Autenticar contra la tabla Registro (credenciales)
             var reg = service.autenticarYObtener(req.getCorreo(), req.getContrasenia());
+            // Obtener datos de perfil del usuario
             var u = usuarioService.findByRut(reg.getRut());
-            return ResponseEntity.ok(
-                    new LoginResponse(true, reg.getUsuario(), u.getRut(), u.getNombre(), u.getCorreo(), reg.getRolId(),
-                            reg.getRolNombre()));
+
+            // Generar JWT usando correo (subject), rut y rol
+            String token = jwtUtil.generateToken(
+                    u.getCorreo(),
+                    u.getRut(),
+                    reg.getRolNombre()
+            );
+
+            LoginResponse resp = new LoginResponse(
+                    true,
+                    token,
+                    reg.getUsuario(),
+                    u.getRut(),
+                    u.getNombre(),
+                    u.getCorreo(),
+                    reg.getRolId(),
+                    reg.getRolNombre()
+            );
+
+            return ResponseEntity.ok(resp);
         } catch (org.springframework.web.server.ResponseStatusException e) {
             if (e.getStatusCode().value() == 401) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new LoginResponse(false, null, null, null, null, null, null));
+                // Credenciales incorrectas
+                LoginResponse resp = new LoginResponse(
+                        false,
+                        null, // sin token
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                );
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(resp);
             }
             throw e;
         }
@@ -97,7 +135,7 @@ public class RegistroController {
         } catch (org.springframework.web.server.ResponseStatusException e) {
             if (e.getStatusCode().value() == 401) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new ChangePasswordResponse(false, "La contrase�a actual no es correcta"));
+                        .body(new ChangePasswordResponse(false, "La contraseña actual no es correcta"));
             }
             throw e;
         }
@@ -142,7 +180,8 @@ public class RegistroController {
         return new RegistroCompletoResponse(true, reg.getUsuario());
     }
 
-    // DTOs para login (mantenemos mismos nombres que Android)
+    // ===== DTOs para login (mantenemos mismos nombres que Android) =====
+
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
@@ -151,6 +190,7 @@ public class RegistroController {
         @Schema(description = "Correo del usuario", example = "admin@test.com")
         @Email
         private String correo;
+
         @NotBlank
         @Schema(description = "Contraseña", example = "Admin123!")
         private String contrasenia;
@@ -172,17 +212,22 @@ public class RegistroController {
         }
     }
 
-    public record LoginResponse(
-            boolean success,
-            String usuario,
-            String rut,
-            String nombre,
-            String correo,
-            Long rolId,
-            String rolNombre) {
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Data
+    public static class LoginResponse {
+        private boolean success;
+        private String token;   // JWT
+        private String usuario;
+        private String rut;
+        private String nombre;
+        private String correo;
+        private Long rolId;
+        private String rolNombre;
     }
 
-    // DTO para cambio de contraseña
+    // ===== DTO para cambio de contraseña =====
+
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
@@ -190,12 +235,15 @@ public class RegistroController {
         @NotBlank
         @Schema(description = "Usuario o correo", example = "juan@example.com")
         private String usuarioOCorreo;
+
         @NotBlank
         @Schema(description = "Contraseña actual", example = "ClaveSegura123")
         private String contraseniaActual;
+
         @NotBlank
         @Schema(description = "Nueva contraseña", example = "NuevaClave123")
         private String nuevaContrasenia;
+
         @NotBlank
         @Schema(description = "Confirmación de nueva contraseña", example = "NuevaClave123")
         private String confirmarContrasenia;
@@ -204,7 +252,8 @@ public class RegistroController {
     public record ChangePasswordResponse(boolean success, String message) {
     }
 
-    // DTO para registro completo
+    // ===== DTO para registro completo =====
+
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
@@ -212,28 +261,36 @@ public class RegistroController {
         @NotBlank
         @Schema(description = "RUT", example = "12345678-9")
         private String rut;
+
         @NotBlank
         @Schema(description = "Nombre", example = "Juan")
         private String nombre;
+
         @NotBlank
         @Schema(description = "Apellidos", example = "Pérez López")
         private String apellidos; // requerido por el modelo
+
         @NotBlank
         @Schema(description = "Correo", example = "juan@example.com")
         @Email
         private String correo;
+
         @NotBlank
         @Schema(description = "Fecha de nacimiento (yyyy-mm-dd)", example = "1995-10-10")
         private String fechaNacimiento; // yyyy-mm-dd
+
         @NotBlank
         @Schema(description = "Contraseña", example = "ClaveSegura123")
         private String contrasenia;
+
         @NotBlank
         @Schema(description = "Confirmación de contraseña", example = "ClaveSegura123")
         private String confirmarContrasenia;
+
         @NotBlank
         @Schema(description = "Dirección", example = "Calle Falsa 123")
         private String direccion;
+
         @NotBlank
         @Schema(description = "Teléfono", example = "987654321")
         private String telefono;
@@ -242,5 +299,3 @@ public class RegistroController {
     public record RegistroCompletoResponse(boolean success, String usuario) {
     }
 }
-
-
