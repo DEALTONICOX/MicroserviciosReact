@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // ✅ 1) NUNCA bloquear nada de /api/v1/registros/**
+        //1) NUNCA bloquear nada de /api/v1/registros/**
         // (login, registro-completo, cambiar-contrasenia, etc.)
         if (path.startsWith("/api/v1/registros")) {
             filterChain.doFilter(request, response);

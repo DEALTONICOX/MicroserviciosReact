@@ -35,10 +35,10 @@ public class SecurityConfig {
                     "/v3/api-docs/**"
                 ).permitAll()
 
-                // ✅ Solo ADMIN puede acceder a /api/v1/usuarios/**
+                //Solo ADMIN puede acceder a /api/v1/usuarios/**
                 .requestMatchers("/api/v1/usuarios/**").hasRole("ADMIN")
 
-                // ✅ El resto requiere estar autenticado (cualquier rol)
+                //El resto requiere estar autenticado (cualquier rol)
                 .anyRequest().authenticated()
             )
             // Filtro JWT antes del filtro de login por formulario
