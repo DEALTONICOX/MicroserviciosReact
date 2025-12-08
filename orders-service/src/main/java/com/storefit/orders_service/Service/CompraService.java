@@ -57,7 +57,8 @@ public class CompraService {
         }
         rutUsuario = rutUsuario.trim();
         UsuarioDTO usuario = usersClient.obtenerUsuarioPorRut(rutUsuario);
-        if (usuario == null || usuario.getRut() == null || !rutUsuario.equals(usuario.getRut())) {
+        // Si el servicio no devolviÃ³ usuario o viene sin rut, consideramos que no existe
+        if (usuario == null || usuario.getRut() == null || usuario.getRut().isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
                     "Usuario no encontrado o RUT no coincide");
@@ -88,6 +89,9 @@ public class CompraService {
         for (CompraDetalle d : compra.getDetalles()) {
             d.setIdDetalle(null);
             d.setCompra(compra); // set FK
+            if (d.getImagen() == null || d.getImagen().isBlank()) {
+                d.setImagen("/img/placeholder.svg");
+            }
         }
 
         return compraRepository.save(compra);
@@ -95,5 +99,11 @@ public class CompraService {
 
     public Integer totalGastado(String rut) {
         return compraRepository.totalGastadoPorRut(rut);
+    }
+
+    // Normaliza rut quitando puntos y espacios para comparaciones simples
+    private String normalizarRut(String rut) {
+        if (rut == null) return null;
+        return rut.replace(".", "").replace(" ", "");
     }
 }

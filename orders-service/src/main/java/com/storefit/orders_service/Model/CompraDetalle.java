@@ -64,4 +64,8 @@ public class CompraDetalle {
     @Column(nullable = false)
     @Schema(description = "Precio unitario CLP", example = "19990")
     private Integer precioUnitario;  //clp
+
+    @Column(length = 300)
+    @Schema(description = "URL de imagen del producto en el momento de la compra", example = "/img/PoleraStorefit.png")
+    private String imagen;
 }

@@ -116,6 +116,7 @@ public class CompraController {
                     org.springframework.http.HttpStatus.FORBIDDEN,
                     "No puedes crear compras para otro usuario");
         }
+        // Propagar imagen/nombre desde los headers del request si hiciera falta
         Compra creada = service.crearCompra(compra);
         return ResponseEntity
                 .created(URI.create("/api/v1/compras/" + creada.getIdCompra()))

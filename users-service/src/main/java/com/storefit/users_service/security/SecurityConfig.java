@@ -35,8 +35,9 @@ public class SecurityConfig {
                     "/v3/api-docs/**"
                 ).permitAll()
 
-                //Solo ADMIN puede acceder a /api/v1/usuarios/**
-                .requestMatchers("/api/v1/usuarios/**").hasRole("ADMIN")
+                // Endpoints de usuarios se validan por headers en los controllers
+                // (Authorization.fromHeaders + requireOwnerOrAdmin), asÃ­ que no exigimos rol aquÃ­
+                .requestMatchers("/api/v1/usuarios/**").permitAll()
 
                 //El resto requiere estar autenticado (cualquier rol)
                 .anyRequest().authenticated()

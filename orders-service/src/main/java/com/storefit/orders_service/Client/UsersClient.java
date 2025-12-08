@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.storefit.orders_service.Model.UsuarioDTO;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +29,14 @@ public class UsersClient {
         try {
             return client.get()
                     .uri(path)
+                    // users-service exige headers; como consultamos el mismo rut, rol CLIENTE basta
+                    .header("X-User-Rut", rut)
+                    .header("X-User-Rol", "CLIENTE")
                     .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), r -> r.bodyToMono(String.class)
+                            .map(msg -> new ResponseStatusException(
+                                    r.statusCode(),
+                                    (msg != null && !msg.isBlank()) ? msg : "Usuario no encontrado")))
                     .onStatus(status -> status.is4xxClientError(), r -> r.bodyToMono(String.class)
                             .map(msg -> new ResponseStatusException(
                                     HttpStatus.NOT_FOUND,
@@ -38,6 +46,8 @@ public class UsersClient {
                                     HttpStatus.BAD_GATEWAY,
                                     (msg != null && !msg.isBlank()) ? msg : "Error en users-service")))
                     .bodyToMono(UsuarioDTO.class)
+                    .switchIfEmpty(Mono.error(new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Usuario no encontrado")))
                     .block();
         } catch (ResponseStatusException ex) {
             // Mantener 404 / 502 / etc tal cual
@@ -60,7 +70,13 @@ public class UsersClient {
         try {
             client.get()
                     .uri(path)
+                    .header("X-User-Rut", rut)
+                    .header("X-User-Rol", "CLIENTE")
                     .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), r -> r.bodyToMono(String.class)
+                            .map(msg -> new ResponseStatusException(
+                                    r.statusCode(),
+                                    (msg != null && !msg.isBlank()) ? msg : "Usuario no encontrado")))
                     .onStatus(status -> status.is4xxClientError(), r -> r.bodyToMono(String.class)
                             .map(msg -> new ResponseStatusException(
                                     HttpStatus.NOT_FOUND,
