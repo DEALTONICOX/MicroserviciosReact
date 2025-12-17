@@ -67,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.clearContext();
                 }
             } catch (Exception ex) {
-                // ⚠️ IMPORTANTE: NO devolvemos 403 aquí, solo limpiamos
+                // IMPORTANTE: NO devolvemos 403 aquí, solo limpiamos
                 SecurityContextHolder.clearContext();
             }
         }

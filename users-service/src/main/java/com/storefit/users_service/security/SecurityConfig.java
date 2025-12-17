@@ -27,7 +27,7 @@ public class SecurityConfig {
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // ✅ TODO lo de /api/v1/registros/** es público (login / registro / cambiar pass)
+                //TODO lo de /api/v1/registros/** es público (login / registro / cambiar pass)
                 .requestMatchers(
                     "/api/v1/registros/**",
                     "/swagger-ui.html",
